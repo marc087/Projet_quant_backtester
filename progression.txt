@@ -1,0 +1,52 @@
+1. Choix d'architecture (à expliquer, pas juste montrer)
+
+Pourquoi deux versions : v1 vectorisée (pédagogique, rapide à itérer) puis v2 event-driven (le vrai objectif, plus proche de la réalité d'un broker) — et surtout pourquoi l'event-driven élimine structurellement le biais anticipatif alors que le vectorisé demande de la rigueur pour l'éviter.
+Le piège du look-ahead bias avec le .shift(1) systématique : décision au close du jour J, exécution au jour J+1 seulement. Bon candidat pour un schéma dans le README.
+
+
+2. Un "bug log" — très valorisant si présenté comme tel
+
+C'est souvent la partie la plus lue par un recruteur technique, parce que ça prouve une vraie compréhension, pas juste du code qui tourne :
+
+Le bug sortino_ratio : .std() sur returns[returns < 0] réduisait artificiellement la taille de l'échantillon pour une stratégie peu investie (Mean Reversion), causant un Sortino < Sharpe alors que ça devrait presque toujours être l'inverse. Corrigé avec la formule académique stricte (downside = returns.clip(upper=0), moyenne des carrés sur tout l'échantillon). Un bug qui ne se voyait pas sur les stratégies "normales" — bon exemple de pourquoi les tests unitaires comptent.
+
+Le test de cohérence Buy & Hold (Beta ≈ 1, Alpha ≈ 0 quand le benchmark est le marché lui-même) utilisé comme garde-fou de validation à chaque modification du module de métriques.
+
+Le piège MultiIndex de yfinance et sa résolution.
+
+
+3. Limites et biais assumés (montre ta lucidité, pas ta naïveté)
+
+Le risque de "couteau qui tombe" pour Mean Reversion (acheter une baisse qui ne se termine jamais) — identifié en théorie avant de coder, bon signal de rigueur.
+La règle de sortie simplifiée en v1 (sort dès que le z-score repasse sous le seuil, pas "tenu jusqu'au retour réel à la moyenne") — limite du calcul vectorisé, reportée consciemment à v2 avec justification technique (besoin d'un état persistant entre les jours).
+Alpha positif ≠ bat le marché en absolu : la nuance entre performance ajustée au risque (vs ce que le Beta prédit) et performance brute — illustrée par Momentum (Alpha positif, CAGR pourtant inférieur à Buy & Hold).
+Sharpe négatif contre-intuitif : sur rendements négatifs, une volatilité plus faible peut donner un Sharpe pire, pas meilleur — piège d'interprétation à mentionner si tu gardes cet exemple.
+Toujours rappeler : un seul actif (AAPL), une seule période, pas de validation out-of-sample — donc aucune conclusion de "cette stratégie marche" à prendre au sérieux telle quelle.
+
+
+4. Choix de design justifiés (démontre que rien n'est arbitraire)
+
+Fonctions pures indépendantes pour performance.py (pas d'état à maintenir) vs classe prévue pour Portfolio en v2 (état qui évolue : cash, positions) — le raisonnement complet qu'on a fait ensemble.
+strategy_calc() générique, réutilisable pour toute stratégie basée sur un signal 0/1 — plutôt que dupliquer la même logique de shift/cumul dans chaque stratégie.
+Le choix de N pour chaque stratégie, avec justification (Momentum : proche de la littérature académique 6-12 mois vs ton choix court terme ; Mean Reversion : horizon plus court, ~1 mois) — même si le choix final reste à trancher/tester.
+
+
+5. Résultats et visualisations à inclure
+
+Le tableau comparatif final des 3 stratégies (CAGR, Vol, Sharpe, Sortino, MaxDD, Alpha, Beta).
+Le graphique des courbes d'equity, avec l'observation notable : Mean Reversion rebondit dès mars 2020 (krach Covid) pendant que les deux autres stratégies continuent de chuter, mais elles la rattrapent quelques mois après — bon exemple concret à commenter avec le lien vers la limite de la règle de sortie.
+
+
+6. Structure technique à documenter
+
+Setup avec uv (reproductibilité — n'importe qui peut faire uv sync).
+Architecture des fichiers (data.py, strategies.py, performance.py, plotting.py, main.py) et pourquoi cette séparation par responsabilité
+
+
+Où on en est
+✅ 3 stratégies fonctionnelles (Buy & Hold, Momentum, Mean Reversion) avec un module de métriques validé et débogué
+✅ Visualisation des courbes d'equity
+🔲 Pairs Trading (mise en pause volontaire — nécessite short + cointégration, plus complexe)
+🔲 Tests unitaires
+🔲 Package Python propre (structure pyproject.toml, imports relatifs, etc.)
+🔲 Architecture event-driven (v2) — l'objectif final, où tu récupéreras aussi le mean reversion "pari tenu"

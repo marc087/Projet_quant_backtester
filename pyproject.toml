@@ -9,3 +9,8 @@ dependencies = [
     "pandas>=3.0.3",
     "yfinance>=1.5.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
