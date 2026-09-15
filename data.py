@@ -1,4 +1,7 @@
 import yfinance as yf
+import pandas as pd
 
-df = yf.download("AAPL", start="2020-01-01", end="2024-01-01")
-df.columns = df.columns.get_level_values("Price")  # on jette le niveau Ticker
+def load_ohlcv(ticker: str, start: str, end: str) -> pd.DataFrame:
+    df = yf.download(ticker, start=start, end=end)
+    df.columns = df.columns.get_level_values("Price")  # on jette le niveau Ticker
+    return df
